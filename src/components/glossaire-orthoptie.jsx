@@ -774,12 +774,12 @@ function WelcomeModal({ onClose }) {
         <div className="og-logo-mark mx-auto mb-4">
           <BookOpen size={16} color="var(--ink)" strokeWidth={2} />
         </div>
-        <h3 className="og-term-name text-xl mb-4">Bienvenue</h3>
+        <h3 className="og-term-name text-xl mb-4">Ortho·Glossaire</h3>
         <p className="og-definition text-[0.97rem] mb-2">
-          Bonjour, bienvenue sur ce glossaire. Nous espérons que celui-ci pourra vous être utile.
+          Votre glossaire d'orthoptie : définitions, abréviations, flashcards et quiz pour réviser à votre rythme.
         </p>
         <p className="og-eyebrow mb-6">
-          Développé par Simon BARBARAY, Maxence RATEAUX, Alice LECLERCQ
+          Réalisé par Simon BARBARAY, Maxence RATEAUX et Alice LECLERCQ
         </p>
         <button
           onClick={onClose}
