@@ -21,6 +21,7 @@ import {
   BookMarked,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { readGlossaryCache, writeGlossaryCache } from "@/lib/glossary-cache";
 import FlashcardMode from "@/components/FlashcardMode";
 import QuizMode from "@/components/QuizMode";
 import AbbreviationsLexicon from "@/components/AbbreviationsLexicon";
@@ -251,6 +252,7 @@ const STYLES = `
   font-family: 'Source Serif 4', serif;
   color: var(--ink);
   line-height: 1.55;
+  white-space: pre-wrap;
 }
 
 .og-badge {
@@ -403,6 +405,7 @@ const STYLES = `
   background: var(--bg);
   border: 1px solid var(--line);
   color: var(--ink);
+  white-space: pre-wrap;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 .og-quiz-option:hover:not(:disabled) {
@@ -910,6 +913,9 @@ export default function OrthoGlossaire() {
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [syncError, setSyncError] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
+  const [offlineMode, setOfflineMode] = useState(false);
   const [search, setSearch] = useState("");
 
   const [view, setView] = useState("glossary");
@@ -951,11 +957,68 @@ export default function OrthoGlossaire() {
 
   useEffect(() => {
     loadData();
+
+    const channel = supabase
+      .channel("glossary-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "glossary_terms" },
+        () => loadData({ silent: true })
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "glossary_proposals" },
+        () => loadData({ silent: true })
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "glossary_abbreviations" },
+        () => loadData({ silent: true })
+      )
+      .subscribe();
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") loadData({ silent: true });
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
-  async function loadData() {
-    setLoading(true);
-    setLoadError(false);
+  function applyLoadedData(loadedTerms, loadedAbbr, proposalsData) {
+    setTerms(loadedTerms);
+    setAbbreviations(loadedAbbr);
+    setProposals(
+      (proposalsData || []).map((p) => ({
+        id: p.id,
+        term: p.term,
+        note: p.note,
+        date: p.created_at,
+        status: p.status,
+      }))
+    );
+    writeGlossaryCache({
+      terms: loadedTerms,
+      abbreviations: loadedAbbr,
+      proposals: (proposalsData || []).map((p) => ({
+        id: p.id,
+        term: p.term,
+        note: p.note,
+        date: p.created_at,
+        status: p.status,
+      })),
+    });
+  }
+
+  async function loadData({ silent = false } = {}) {
+    if (!silent) {
+      setLoading(true);
+      setLoadError(false);
+      setOfflineMode(false);
+    }
 
     try {
       const { data: termsData, error: termsError } = await supabase
@@ -996,21 +1059,33 @@ export default function OrthoGlossaire() {
         loadedAbbr = seededAbbr || [];
       }
 
-      setTerms(loadedTerms);
-      setAbbreviations(loadedAbbr);
-      setProposals(
-        (proposalsData || []).map((p) => ({
-          id: p.id,
-          term: p.term,
-          note: p.note,
-          date: p.created_at,
-          status: p.status,
-        }))
-      );
+      applyLoadedData(loadedTerms, loadedAbbr, proposalsData);
+      setSyncError(false);
+      setSyncMessage("");
+      setLoadError(false);
+      setOfflineMode(false);
     } catch (e) {
-      setLoadError(true);
+      const message =
+        e?.message ||
+        e?.error_description ||
+        "Impossible de joindre la base Supabase.";
+      const cached = readGlossaryCache();
+
+      if (cached?.terms?.length) {
+        setTerms(cached.terms);
+        setAbbreviations(cached.abbreviations || []);
+        setProposals(cached.proposals || []);
+        setOfflineMode(true);
+        setSyncMessage(message);
+        setLoadError(false);
+      } else {
+        setLoadError(true);
+        setSyncMessage(message);
+        setOfflineMode(false);
+      }
+      if (!silent) console.error("[OrthoGlossaire] loadData:", e);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
@@ -1043,6 +1118,11 @@ export default function OrthoGlossaire() {
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  function reportSyncError(error, fallback = "Enregistrement impossible.") {
+    setSyncError(true);
+    setSyncMessage(error?.message || fallback);
+  }
+
   async function submitProposal(term, note) {
     setProposeSubmitting(true);
     const { data, error } = await supabase
@@ -1052,7 +1132,7 @@ export default function OrthoGlossaire() {
       .maybeSingle();
     setProposeSubmitting(false);
     if (error || !data) {
-      setLoadError(true);
+      reportSyncError(error);
       return;
     }
     setProposals((prev) => [
@@ -1098,7 +1178,7 @@ export default function OrthoGlossaire() {
         .update({ definition: def, nature: nature || null, category: category || null })
         .eq("id", existing.id);
       if (error) {
-        setLoadError(true);
+        reportSyncError(error);
         return;
       }
       nextTerms = terms.map((t) => (t.id === existing.id ? { ...t, definition: def, nature, category } : t));
@@ -1109,7 +1189,7 @@ export default function OrthoGlossaire() {
         .select("id, term, nature, category, definition")
         .maybeSingle();
       if (error || !data) {
-        setLoadError(true);
+        reportSyncError(error);
         return;
       }
       nextTerms = [...terms, data];
@@ -1120,7 +1200,7 @@ export default function OrthoGlossaire() {
       .delete()
       .eq("id", proposal.id);
     if (delError) {
-      setLoadError(true);
+      reportSyncError(error);
       return;
     }
 
@@ -1146,7 +1226,7 @@ export default function OrthoGlossaire() {
       .delete()
       .eq("id", proposal.id);
     if (error) {
-      setLoadError(true);
+      reportSyncError(error);
       return;
     }
     setProposals((prev) => prev.filter((p) => p.id !== proposal.id));
@@ -1168,7 +1248,7 @@ export default function OrthoGlossaire() {
       .update({ definition, nature: nature || null, category: category || null })
       .eq("id", t.id);
     if (error) {
-      setLoadError(true);
+      reportSyncError(error);
       return;
     }
     setTerms((prev) => prev.map((x) => (x.id === t.id ? { ...x, definition, nature, category } : x)));
@@ -1178,7 +1258,7 @@ export default function OrthoGlossaire() {
   async function deleteTerm(t) {
     const { error } = await supabase.from("glossary_terms").delete().eq("id", t.id);
     if (error) {
-      setLoadError(true);
+      reportSyncError(error);
       return;
     }
     setTerms((prev) => prev.filter((x) => x.id !== t.id));
@@ -1194,7 +1274,7 @@ export default function OrthoGlossaire() {
       .maybeSingle();
     setAddTermSubmitting(false);
     if (error || !data) {
-      setLoadError(true);
+      reportSyncError(error);
       return;
     }
     setTerms((prev) => [...prev, data]);
@@ -1217,7 +1297,7 @@ export default function OrthoGlossaire() {
       .update({ abbr, meaning, category })
       .eq("id", a.id);
     if (error) {
-      setLoadError(true);
+      reportSyncError(error);
       return;
     }
     setAbbreviations((prev) =>
@@ -1229,7 +1309,7 @@ export default function OrthoGlossaire() {
   async function deleteAbbrev(a) {
     const { error } = await supabase.from("glossary_abbreviations").delete().eq("id", a.id);
     if (error) {
-      setLoadError(true);
+      reportSyncError(error);
       return;
     }
     setAbbreviations((prev) => prev.filter((x) => x.id !== a.id));
@@ -1249,7 +1329,7 @@ export default function OrthoGlossaire() {
       .maybeSingle();
     setAddAbbrevSubmitting(false);
     if (error || !data) {
-      setLoadError(true);
+      reportSyncError(error);
       return;
     }
     setAbbreviations((prev) => [...prev, data].sort((a, b) => a.abbr.localeCompare(b.abbr, "fr")));
@@ -1350,12 +1430,40 @@ export default function OrthoGlossaire() {
 
       {loadError && (
         <div
-          className="text-center py-2 text-sm og-mono flex items-center justify-center gap-2"
+          className="text-center py-2 text-sm og-mono flex flex-wrap items-center justify-center gap-2 px-3"
           style={{ background: "var(--pending-soft)", color: "var(--pending)" }}
         >
           <AlertCircle size={14} />
-          Synchronisation impossible.
-          <button onClick={loadData} className="underline">
+          Synchronisation impossible
+          {syncMessage ? ` — ${syncMessage}` : ""}.
+          <button onClick={() => loadData()} className="underline">
+            Réessayer
+          </button>
+        </div>
+      )}
+
+      {!loadError && offlineMode && (
+        <div
+          className="text-center py-2 text-sm og-mono flex flex-wrap items-center justify-center gap-2 px-3"
+          style={{ background: "var(--pending-soft)", color: "var(--pending)" }}
+        >
+          <AlertCircle size={14} />
+          Mode hors ligne — dernières données en cache
+          {syncMessage ? ` (${syncMessage})` : ""}.
+          <button onClick={() => loadData()} className="underline">
+            Resynchroniser
+          </button>
+        </div>
+      )}
+
+      {!loadError && syncError && (
+        <div
+          className="text-center py-2 text-sm og-mono flex flex-wrap items-center justify-center gap-2 px-3"
+          style={{ background: "var(--pending-soft)", color: "var(--pending)" }}
+        >
+          <AlertCircle size={14} />
+          Échec de synchronisation — {syncMessage || "vérifiez la connexion"}.
+          <button onClick={() => loadData({ silent: true })} className="underline">
             Réessayer
           </button>
         </div>
