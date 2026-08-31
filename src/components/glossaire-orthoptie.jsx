@@ -25,6 +25,8 @@ import { readGlossaryCache, writeGlossaryCache } from "@/lib/glossary-cache";
 import FlashcardMode from "@/components/FlashcardMode";
 import QuizMode from "@/components/QuizMode";
 import AbbreviationsLexicon from "@/components/AbbreviationsLexicon";
+import PiedDePageInstitutionnel from "@/components/PiedDePageInstitutionnel";
+import LogosInstitutionnels from "@/components/LogosInstitutionnels";
 import { DEFAULT_ABBREVIATIONS, ABBREVIATION_CATEGORIES } from "@/data/abbreviations";
 
 /* ============================================================
@@ -350,6 +352,91 @@ const STYLES = `
   background: var(--pending);
   border: 1.5px solid var(--surface);
 }
+
+.og-site-footer {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding: 1.25rem 1rem 1.5rem;
+  margin-top: 1rem;
+}
+.og-site-footer-inner {
+  max-width: 56rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+.og-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+  min-width: 0;
+}
+.og-header-partners {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.35rem;
+  padding-left: 0.65rem;
+  border-left: 1px solid var(--line);
+  overflow-x: auto;
+  max-width: min(100%, 28rem);
+  scrollbar-width: none;
+}
+.og-header-partners::-webkit-scrollbar { display: none; }
+@media (max-width: 767px) {
+  .og-header-partners {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+    max-width: 100%;
+    order: 3;
+    flex-basis: 100%;
+  }
+  .og-header-brand { flex-wrap: wrap; }
+}
+.og-header-partner-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 2rem;
+  max-width: 4.25rem;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  background: #fff;
+}
+.og-header-partner-logo {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+@media (min-width: 1024px) {
+  .og-header-partner-wrap {
+    height: 2.25rem;
+    max-width: 5rem;
+  }
+}
+.og-site-footer-legal {
+  max-width: 36rem;
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+.og-site-footer-legal a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.og-site-footer-legal a:hover { color: var(--accent-deep); }
+.og-cc-badge-link { opacity: 0.92; transition: opacity 0.15s ease; }
+.og-cc-badge-link:hover { opacity: 1; }
+.og-cc-badge { height: 2rem; width: auto; }
 
 @media print {
   .og-header, .og-sidebar, .og-no-print, .og-study-nav { display: none !important; }
@@ -1344,13 +1431,16 @@ export default function OrthoGlossaire() {
 
       {/* HEADER */}
       <header className="og-header">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
-          <div className="og-logo-mark">
-            <Eye size={16} color="var(--ink)" strokeWidth={2} />
-          </div>
-          <div className="mr-2 hidden sm:block">
-            <div className="og-term-name text-[0.95rem] leading-tight">Ortho·Glossaire</div>
-            <div className="og-eyebrow leading-tight">Orthoptie</div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 flex-wrap">
+          <div className="og-header-brand">
+            <div className="og-logo-mark">
+              <Eye size={16} color="var(--ink)" strokeWidth={2} />
+            </div>
+            <div className="hidden sm:block">
+              <div className="og-term-name text-[0.95rem] leading-tight">Ortho·Glossaire</div>
+              <div className="og-eyebrow leading-tight">Orthoptie</div>
+            </div>
+            <LogosInstitutionnels />
           </div>
 
           {view === "glossary" ? (
@@ -1707,6 +1797,8 @@ export default function OrthoGlossaire() {
           )}
         </div>
       )}
+
+      <PiedDePageInstitutionnel />
 
       {showWelcome && (
         <WelcomeModal
