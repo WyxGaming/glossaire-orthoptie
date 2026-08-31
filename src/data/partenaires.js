@@ -1,5 +1,5 @@
 export const PARTENAIRES = [
-  { fichier: "universite-paris-cite.png", alt: "Université Paris Cité" },
+  { fichier: "universite-paris-cite.png", alt: "Université Paris Cité", large: true },
   { fichier: "ap-hp-centre-upc.png", alt: "AP-HP Centre Université Paris Cité" },
   { fichier: "centre-borelli.jpg", alt: "Centre Borelli" },
   { fichier: "necker-enfants-malades.jpg", alt: "Necker — Enfants malades, Hôpital universitaire" },

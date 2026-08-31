@@ -409,6 +409,11 @@ const STYLES = `
   border-radius: 0.4rem;
   background: #fff;
 }
+.og-header-partner-wrap--large {
+  height: 2.75rem;
+  max-width: 6.5rem;
+  padding: 0.2rem 0.45rem;
+}
 .og-header-partner-logo {
   max-height: 100%;
   max-width: 100%;
@@ -418,6 +423,10 @@ const STYLES = `
   .og-header-partner-wrap {
     height: 2.25rem;
     max-width: 5rem;
+  }
+  .og-header-partner-wrap--large {
+    height: 3.25rem;
+    max-width: 8rem;
   }
 }
 .og-site-footer-legal {
