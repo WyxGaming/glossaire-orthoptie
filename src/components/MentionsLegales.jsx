@@ -11,7 +11,7 @@ export default function MentionsLegales() {
         <p>
           Le présent site est un projet pédagogique développé par <strong>Simon Barbaray et Maxence Rateaux</strong>,
           orthoptistes, rattachés à l&apos;<strong>Hôpital Necker – Enfants Malades</strong> et à la formation en
-          orthoptie de l&apos;Université Paris Cité (anciennement Université Paris Descartes – Paris 5).
+          orthoptie de l&apos;Université Paris Cité.
         </p>
         <p>
           Le site a pour objectif de proposer gratuitement un outil pédagogique consacré au vocabulaire utilisé en
@@ -24,12 +24,12 @@ export default function MentionsLegales() {
           <li>
             <strong>Simon Barbaray</strong>
             <br />
-            <a href="mailto:Simon.Barbaray@APHP.fr">Simon.Barbaray@APHP.fr</a>
+            <a href="mailto:simon.barbaray@aphp.fr">✉️ simon.barbaray@aphp.fr</a>
           </li>
           <li>
             <strong>Maxence Rateaux</strong>
             <br />
-            <a href="mailto:Maxence.Rateaux@APHP.fr">Maxence.Rateaux@APHP.fr</a>
+            <a href="mailto:maxence.rateaux@aphp.fr">✉️ maxence.rateaux@aphp.fr</a>
           </li>
         </ul>
       </section>
