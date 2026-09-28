@@ -1,6 +1,10 @@
 import { LICENCE_CC, urlPartenaire } from "@/data/partenaires";
 
-export default function PiedDePageInstitutionnel({ onOpenMentionsLegales }) {
+export default function PiedDePageInstitutionnel({
+  onOpenMentionsLegales,
+  onOpenPolitiqueConfidentialite,
+  onOpenInformationsMedicales,
+}) {
   const annee = new Date().getFullYear();
 
   return (
@@ -17,13 +21,38 @@ export default function PiedDePageInstitutionnel({ onOpenMentionsLegales }) {
               Modification 4.0 International
             </a>
             . Toute reproduction, diffusion ou adaptation sans autorisation est interdite.
-            {" · "}
+          </p>
+          <p className="og-site-footer-links">
             {onOpenMentionsLegales ? (
               <button type="button" className="og-legal-footer-link" onClick={onOpenMentionsLegales}>
                 Mentions légales
               </button>
             ) : (
               <a href="#mentions-legales">Mentions légales</a>
+            )}
+            {" · "}
+            {onOpenPolitiqueConfidentialite ? (
+              <button
+                type="button"
+                className="og-legal-footer-link"
+                onClick={onOpenPolitiqueConfidentialite}
+              >
+                Confidentialité
+              </button>
+            ) : (
+              <a href="#politique-confidentialite">Confidentialité</a>
+            )}
+            {" · "}
+            {onOpenInformationsMedicales ? (
+              <button
+                type="button"
+                className="og-legal-footer-link"
+                onClick={onOpenInformationsMedicales}
+              >
+                Informations médicales
+              </button>
+            ) : (
+              <a href="#informations-medicales">Informations médicales</a>
             )}
           </p>
         </div>

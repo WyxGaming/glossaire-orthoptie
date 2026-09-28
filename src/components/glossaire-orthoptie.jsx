@@ -28,6 +28,8 @@ import AbbreviationsLexicon from "@/components/AbbreviationsLexicon";
 import PiedDePageInstitutionnel from "@/components/PiedDePageInstitutionnel";
 import LogosInstitutionnels from "@/components/LogosInstitutionnels";
 import MentionsLegales from "@/components/MentionsLegales";
+import PolitiqueConfidentialite from "@/components/PolitiqueConfidentialite";
+import InformationsMedicales from "@/components/InformationsMedicales";
 import { DEFAULT_ABBREVIATIONS, ABBREVIATION_CATEGORIES } from "@/data/abbreviations";
 
 /* ============================================================
@@ -42,6 +44,17 @@ import { DEFAULT_ABBREVIATIONS, ABBREVIATION_CATEGORIES } from "@/data/abbreviat
    ============================================================ */
 const ADMIN_PASSWORD = "ortho2026";
 const WELCOME_SEEN_KEY = "og-welcome-seen";
+const LEGAL_VIEWS = new Set([
+  "mentions-legales",
+  "politique-confidentialite",
+  "informations-medicales",
+]);
+
+function viewFromHash() {
+  if (typeof window === "undefined") return null;
+  const hash = window.location.hash.replace(/^#/, "");
+  return LEGAL_VIEWS.has(hash) ? hash : null;
+}
 
 const CATEGORIES = [
   "Anatomie",
@@ -444,6 +457,9 @@ const STYLES = `
   text-underline-offset: 2px;
 }
 .og-site-footer-legal a:hover { color: var(--accent-deep); }
+.og-site-footer-links {
+  margin-top: 0.35rem;
+}
 .og-cc-badge-link { opacity: 0.92; transition: opacity 0.15s ease; }
 .og-cc-badge-link:hover { opacity: 1; }
 .og-cc-badge { height: 2rem; width: auto; }
@@ -506,6 +522,18 @@ const STYLES = `
   padding-left: 0;
 }
 .og-legal-contact li { margin-bottom: 0.85rem; }
+.og-legal-sources {
+  list-style: none;
+  padding-left: 0;
+  margin: 0 0 0.65rem;
+}
+.og-legal-sources li {
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface);
+}
 .og-legal-footer-link {
   background: none;
   border: none;
@@ -1085,12 +1113,7 @@ export default function OrthoGlossaire() {
   const [offlineMode, setOfflineMode] = useState(false);
   const [search, setSearch] = useState("");
 
-  const [view, setView] = useState(() => {
-    if (typeof window !== "undefined" && window.location.hash.replace(/^#/, "") === "mentions-legales") {
-      return "mentions-legales";
-    }
-    return "glossary";
-  });
+  const [view, setView] = useState(() => viewFromHash() || "glossary");
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminTab, setAdminTab] = useState("pending");
 
@@ -1162,22 +1185,22 @@ export default function OrthoGlossaire() {
 
   useEffect(() => {
     const onHash = () => {
-      if (window.location.hash.replace(/^#/, "") === "mentions-legales") {
-        setView("mentions-legales");
-      }
+      const legal = viewFromHash();
+      if (legal) setView(legal);
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
   useEffect(() => {
-    if (view === "mentions-legales") {
-      if (window.location.hash !== "#mentions-legales") {
-        window.location.hash = "mentions-legales";
+    if (LEGAL_VIEWS.has(view)) {
+      const expected = `#${view}`;
+      if (window.location.hash !== expected) {
+        window.location.hash = view;
       }
       return;
     }
-    if (window.location.hash === "#mentions-legales") {
+    if (viewFromHash()) {
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
     }
   }, [view]);
@@ -1607,7 +1630,7 @@ export default function OrthoGlossaire() {
                 <LogOut size={16} />
               </button>
             </>
-          ) : view === "mentions-legales" ? (
+          ) : LEGAL_VIEWS.has(view) ? (
             <>
               <div className="flex-1" />
               <button
@@ -1633,7 +1656,7 @@ export default function OrthoGlossaire() {
         </div>
       </header>
 
-      {view !== "admin" && view !== "mentions-legales" && <StudyNav view={view} setView={setView} />}
+      {view !== "admin" && !LEGAL_VIEWS.has(view) && <StudyNav view={view} setView={setView} />}
 
       {loadError && (
         <div
@@ -1680,6 +1703,10 @@ export default function OrthoGlossaire() {
         <Spinner label="Chargement du glossaire…" />
       ) : view === "mentions-legales" ? (
         <MentionsLegales />
+      ) : view === "politique-confidentialite" ? (
+        <PolitiqueConfidentialite />
+      ) : view === "informations-medicales" ? (
+        <InformationsMedicales />
       ) : view === "flashcards" ? (
         <FlashcardMode terms={terms} categories={CATEGORIES} />
       ) : view === "quiz" ? (
@@ -1917,7 +1944,11 @@ export default function OrthoGlossaire() {
         </div>
       )}
 
-      <PiedDePageInstitutionnel onOpenMentionsLegales={() => setView("mentions-legales")} />
+      <PiedDePageInstitutionnel
+        onOpenMentionsLegales={() => setView("mentions-legales")}
+        onOpenPolitiqueConfidentialite={() => setView("politique-confidentialite")}
+        onOpenInformationsMedicales={() => setView("informations-medicales")}
+      />
 
       {showWelcome && (
         <WelcomeModal
