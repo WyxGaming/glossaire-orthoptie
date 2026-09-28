@@ -27,6 +27,7 @@ import QuizMode from "@/components/QuizMode";
 import AbbreviationsLexicon from "@/components/AbbreviationsLexicon";
 import PiedDePageInstitutionnel from "@/components/PiedDePageInstitutionnel";
 import LogosInstitutionnels from "@/components/LogosInstitutionnels";
+import MentionsLegales from "@/components/MentionsLegales";
 import { DEFAULT_ABBREVIATIONS, ABBREVIATION_CATEGORIES } from "@/data/abbreviations";
 
 /* ============================================================
@@ -446,6 +447,76 @@ const STYLES = `
 .og-cc-badge-link { opacity: 0.92; transition: opacity 0.15s ease; }
 .og-cc-badge-link:hover { opacity: 1; }
 .og-cc-badge { height: 2rem; width: auto; }
+
+.og-legal-page {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 2.5rem;
+}
+.og-legal-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 1.75rem;
+  margin: 0 0 0.5rem;
+  color: var(--ink);
+}
+.og-legal-updated {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  margin-bottom: 1.5rem;
+}
+.og-legal-page section {
+  margin-bottom: 1.75rem;
+}
+.og-legal-page h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin: 0 0 0.65rem;
+  color: var(--ink);
+}
+.og-legal-page h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin: 1rem 0 0.4rem;
+  color: var(--ink);
+}
+.og-legal-page p,
+.og-legal-page li {
+  font-family: 'Source Serif 4', serif;
+  font-size: 0.97rem;
+  line-height: 1.6;
+  color: var(--ink);
+  margin: 0 0 0.65rem;
+}
+.og-legal-page ul {
+  margin: 0 0 0.65rem;
+  padding-left: 1.25rem;
+}
+.og-legal-page a {
+  color: var(--accent-deep);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.og-legal-page a:hover { color: var(--ink); }
+.og-legal-contact {
+  list-style: none;
+  padding-left: 0;
+}
+.og-legal-contact li { margin-bottom: 0.85rem; }
+.og-legal-footer-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  color: var(--accent-deep);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.og-legal-footer-link:hover { color: var(--ink); }
 
 @media print {
   .og-header, .og-sidebar, .og-no-print, .og-study-nav { display: none !important; }
@@ -1014,7 +1085,12 @@ export default function OrthoGlossaire() {
   const [offlineMode, setOfflineMode] = useState(false);
   const [search, setSearch] = useState("");
 
-  const [view, setView] = useState("glossary");
+  const [view, setView] = useState(() => {
+    if (typeof window !== "undefined" && window.location.hash.replace(/^#/, "") === "mentions-legales") {
+      return "mentions-legales";
+    }
+    return "glossary";
+  });
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminTab, setAdminTab] = useState("pending");
 
@@ -1083,6 +1159,28 @@ export default function OrthoGlossaire() {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
+
+  useEffect(() => {
+    const onHash = () => {
+      if (window.location.hash.replace(/^#/, "") === "mentions-legales") {
+        setView("mentions-legales");
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  useEffect(() => {
+    if (view === "mentions-legales") {
+      if (window.location.hash !== "#mentions-legales") {
+        window.location.hash = "mentions-legales";
+      }
+      return;
+    }
+    if (window.location.hash === "#mentions-legales") {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  }, [view]);
 
   function applyLoadedData(loadedTerms, loadedAbbr, proposalsData) {
     setTerms(loadedTerms);
@@ -1509,6 +1607,16 @@ export default function OrthoGlossaire() {
                 <LogOut size={16} />
               </button>
             </>
+          ) : view === "mentions-legales" ? (
+            <>
+              <div className="flex-1" />
+              <button
+                onClick={() => setView("glossary")}
+                className="og-btn-ghost rounded-lg px-3 py-2 text-xs sm:text-sm og-mono flex items-center gap-1.5"
+              >
+                <ArrowLeft size={14} /> Retour au glossaire
+              </button>
+            </>
           ) : (
             <>
               <div className="flex-1" />
@@ -1525,7 +1633,7 @@ export default function OrthoGlossaire() {
         </div>
       </header>
 
-      {view !== "admin" && <StudyNav view={view} setView={setView} />}
+      {view !== "admin" && view !== "mentions-legales" && <StudyNav view={view} setView={setView} />}
 
       {loadError && (
         <div
@@ -1570,6 +1678,8 @@ export default function OrthoGlossaire() {
 
       {loading ? (
         <Spinner label="Chargement du glossaire…" />
+      ) : view === "mentions-legales" ? (
+        <MentionsLegales />
       ) : view === "flashcards" ? (
         <FlashcardMode terms={terms} categories={CATEGORIES} />
       ) : view === "quiz" ? (
@@ -1807,7 +1917,7 @@ export default function OrthoGlossaire() {
         </div>
       )}
 
-      <PiedDePageInstitutionnel />
+      <PiedDePageInstitutionnel onOpenMentionsLegales={() => setView("mentions-legales")} />
 
       {showWelcome && (
         <WelcomeModal

@@ -1,6 +1,6 @@
 import { LICENCE_CC, urlPartenaire } from "@/data/partenaires";
 
-export default function PiedDePageInstitutionnel() {
+export default function PiedDePageInstitutionnel({ onOpenMentionsLegales }) {
   const annee = new Date().getFullYear();
 
   return (
@@ -17,6 +17,14 @@ export default function PiedDePageInstitutionnel() {
               Modification 4.0 International
             </a>
             . Toute reproduction, diffusion ou adaptation sans autorisation est interdite.
+            {" · "}
+            {onOpenMentionsLegales ? (
+              <button type="button" className="og-legal-footer-link" onClick={onOpenMentionsLegales}>
+                Mentions légales
+              </button>
+            ) : (
+              <a href="#mentions-legales">Mentions légales</a>
+            )}
           </p>
         </div>
 
