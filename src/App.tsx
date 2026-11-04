@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { supabaseConfigured } from '@/lib/supabase';
 
 const OrthoGlossaire = lazy(() => import('@/components/glossaire-orthoptie'));
@@ -52,9 +53,12 @@ function App() {
   }
 
   return (
-    <Suspense fallback={<Loading />}>
-      <OrthoGlossaire />
-    </Suspense>
+    <>
+      <Suspense fallback={<Loading />}>
+        <OrthoGlossaire />
+      </Suspense>
+      <Analytics />
+    </>
   );
 }
 
